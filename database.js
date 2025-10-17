@@ -8,10 +8,8 @@ export async function checkDatabase(){
     const mongoClient = new MongoClient(MONGO_URL);
     try {
         await mongoClient.connect();
-        console.log("Connected to MongoDB");
 
         const db = mongoClient.db(DATABASE_NAME);
-
         const existingCollections = await db.listCollections({}, {nameOnly: true}).toArray();
         const existingCollectionNames = existingCollections.map(c => c.name);
 
@@ -20,9 +18,6 @@ export async function checkDatabase(){
                 await db.createCollection(colName);
                 const collection = db.collection(colName);
                 await collection.createIndex({hashKey: 1}, {unique: true});
-                console.log(`Created collection ${colName}`);
-            } else {
-                console.log(`Collection ${colName} already exists`);
             }
         }
         return {
@@ -31,7 +26,6 @@ export async function checkDatabase(){
         };
         
     } catch (err){
-        console.log("Database creation error: ", err);
         return {
             message: "Internal server error - Database was not created",
             stack: err.stack,
@@ -50,13 +44,11 @@ export async function insertDatabase(collectionName, document){
         const collection = databases.collection(collectionName);
 
         const result = await collection.insertOne(document);
-        console.log(`Inserted document with ID: ${result.insertedId}`);
         return {
             message: "OK",
             status: 200
         };
     } catch (err) {
-        console.log("Database insertion error: ", err);
         return {
             message: "Internal server error : Database insertion error",
             stack: err.stack,
@@ -75,7 +67,6 @@ export async function findDatabase(collectionName, key){
         const collection = databases.collection(collectionName);
 
         const result = await collection.findOne({hashValue: key});
-
         if (result){
             result.accessCount += 1;
 
@@ -85,14 +76,12 @@ export async function findDatabase(collectionName, key){
                 }
             })
             if (updated.matchedCount > 0){
-                console.log("Updated to database");
                 return {
                     message: "OK",
                     status: 200,
                     body: result
                 };
             } else {
-                console.log("Document found, but not updated");
                 return {
                     message: "Internal server error: Document found, but not updated",
                     status: 500,
@@ -106,7 +95,6 @@ export async function findDatabase(collectionName, key){
         }
         
     } catch (err){
-        console.log("Database search error: ", err);
         return {
             message: "Database search error",
             stack: err.stack,

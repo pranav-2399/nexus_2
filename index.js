@@ -9,13 +9,9 @@ const PORT = 3000;
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-    res.send("Empty route");
-});
-
 app.get("/get_short_URL", async (req, res, next) => {
     const data = req.body.URL;
-        
+
     if (data === undefined){
         const error = new Error("Inappropriate request: URL cannot be undefined");
         error.status = 400;
@@ -25,12 +21,7 @@ app.get("/get_short_URL", async (req, res, next) => {
         error.status = 400;
         next(error);
     } else {
-        console.log(data);
         const hashKey = createHashKey();
-        console.log(hashKey);
-
-        let shorter = "".concat(DOMAIN, PORT, "/", hashKey)
-
         const document = {
             hashValue: hashKey,
             originalURL: data,
@@ -38,10 +29,9 @@ app.get("/get_short_URL", async (req, res, next) => {
         };
 
         const database = "".concat("DB_", modulo3(hashKey));
-        console.log("Database: ", database);
-        console.log("Document: ", document);
         const response = await insertDatabase(database, document);
 
+        const shorter = "".concat(DOMAIN, PORT, "/", hashKey)
         if (response.status === 200){
             res.status(response.status).send({
                 message: response.message,
@@ -56,16 +46,14 @@ app.get("/get_short_URL", async (req, res, next) => {
 
 app.get("/:hash", async (req, res, next) => {
     const hashKey = req.params.hash
-    console.log(hashKey);
     if (hashKey.length !== 7){
         const error = new Error("Invalid short URL. Please try again");
         error.status = 400;
         next(error);
     } else {
         const database = "".concat("DB_", modulo3(hashKey));
-        console.log("database: ", database);
         const result = await findDatabase(database, hashKey);
-        console.log(result);
+
         if (result.status === 200){
             res.status(result.status).send({
                 message: result.message,
@@ -81,7 +69,6 @@ app.get("/:hash", async (req, res, next) => {
 })
 
 app.use((err, req, res, next) => {
-    console.log(err.message)
     res.status(err.status || 500).send({
         message: err.message,
         status: err.status || 500
